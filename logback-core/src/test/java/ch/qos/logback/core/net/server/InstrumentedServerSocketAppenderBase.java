@@ -19,8 +19,6 @@ import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import javax.net.ServerSocketFactory;
 
@@ -37,23 +35,19 @@ public class InstrumentedServerSocketAppenderBase
   private final ServerSocket serverSocket;
   private final ServerListener<RemoteLoggerClient> listener;
   private final ServerRunner<RemoteLoggerClient> runner;
-  private final ExecutorService executor;
   
   private ServerListener lastListener;
   
   public InstrumentedServerSocketAppenderBase(ServerSocket serverSocket) {
-    this(serverSocket, new RemoteLoggerServerListener(serverSocket), null,
-        Executors.newCachedThreadPool());
+    this(serverSocket, new RemoteLoggerServerListener(serverSocket), null);
   }
   
   public InstrumentedServerSocketAppenderBase(ServerSocket serverSocket,
       ServerListener<RemoteLoggerClient> listener, 
-      ServerRunner<RemoteLoggerClient> runner,
-      ExecutorService executor) {
+      ServerRunner<RemoteLoggerClient> runner) {
     this.serverSocket = serverSocket;
     this.listener = listener;
     this.runner = runner;
-    this.executor = executor;
   }
 
   @Override
@@ -92,6 +86,8 @@ public class InstrumentedServerSocketAppenderBase
     };
   }
 
+  
+
   @Override
   protected ServerRunner<RemoteLoggerClient> createServerRunner(
       ServerListener<RemoteLoggerClient> listener, Executor executor) {
@@ -103,11 +99,6 @@ public class InstrumentedServerSocketAppenderBase
   protected ServerListener<RemoteLoggerClient> createServerListener(
       ServerSocket socket) {
     return listener;
-  }
-
-  @Override
-  protected ExecutorService createExecutor() {
-    return executor;
   }
 
   public ServerListener getLastListener() {
