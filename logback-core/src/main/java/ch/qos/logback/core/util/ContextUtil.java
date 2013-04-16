@@ -14,7 +14,10 @@
 package ch.qos.logback.core.util;
 
 import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
@@ -29,9 +32,27 @@ public class ContextUtil extends ContextAwareBase {
     setContext(context);
   }
 
-  public static String getLocalHostName() throws UnknownHostException {
-    InetAddress localhost = InetAddress.getLocalHost();
-    return localhost.getHostName();
+  public static String getLocalHostName() throws SocketException, UnknownHostException {
+    try {
+      final InetAddress addr = InetAddress.getLocalHost();
+      return addr.getHostName();
+    } catch (final UnknownHostException uhe) {
+      final Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+      while (interfaces.hasMoreElements()) {
+        final NetworkInterface nic = interfaces.nextElement();
+        final Enumeration<InetAddress> addresses = nic.getInetAddresses();
+        while (addresses.hasMoreElements()) {
+          final InetAddress address = addresses.nextElement();
+          if (!address.isLoopbackAddress()) {
+            final String hostname = address.getHostName();
+            if (hostname != null) {
+              return hostname;
+            }
+          }
+        }
+      }
+      throw uhe;
+    }
   }
 
   /**
@@ -42,6 +63,8 @@ public class ContextUtil extends ContextAwareBase {
       String localhostName =  getLocalHostName();
       context.putProperty(CoreConstants.HOSTNAME_KEY, localhostName);
     } catch (UnknownHostException e) {
+      addError("Failed to get local hostname", e);
+    } catch (SocketException e) {
       addError("Failed to get local hostname", e);
     } catch (SecurityException e) {
       addError("Failed to get local hostname", e);
@@ -70,6 +93,5 @@ public class ContextUtil extends ContextAwareBase {
       frameworkPackages.add(packageName);
     }
   }
-
 
 }
